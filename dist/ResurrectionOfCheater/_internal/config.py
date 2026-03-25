@@ -1,16 +1,25 @@
 import os
 import sys
+from dotenv import load_dotenv
+
+# .env dosyasındaki değişkenleri yükle
+load_dotenv()
+
+# API Key artık güvenli bir şekilde dışarıdan okunuyor
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # --- BASE_PATH: Uygulamanın çalıştığı ana dizini belirler ---
 # Eğer uygulama .exe (frozen) halindeyse sys.executable kullanır, 
 # .py halindeyse dosyanın kendi konumunu baz alır.
 if getattr(sys, 'frozen', False):
+    # .exe olarak çalışırken .exe'nin olduğu klasör
     BASE_PATH = os.path.dirname(sys.executable)
 else:
+    # .py olarak çalışırken dosyanın olduğu klasör
     BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # --- API Anahtarı ---
-GEMINI_API_KEY = "AIzaSyCo0hgRBEwLvIiINcWr4yctGcJ6onMnxrQ"
+GEMINI_API_KEY = "AIzaSyCPyc8JoJ7D3t00CUKL3mdpNPKwfGz8QKA"
 
 # --- Tesseract Yolları ---
 TESSERACT_PATH = os.path.join(BASE_PATH, "Tesseract-OCR", "tesseract.exe")

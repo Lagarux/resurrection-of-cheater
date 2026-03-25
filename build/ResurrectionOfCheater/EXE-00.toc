@@ -76,7 +76,7 @@
  [],
  False,
  False,
- 1773759763,
+ 1774340458,
  [('runw.exe',
    'd:\\SoftwareTechs\\Python_Projects\\resurrection-of-cheater\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
    'EXECUTABLE')],

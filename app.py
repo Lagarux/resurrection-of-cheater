@@ -172,10 +172,16 @@ class CheaterApp(ctk.CTk):
 
     def process_screenshot(self, img):
         self.deiconify()
+        # Ekran görüntüsü döndüğünde odağı tazele
         self.after(100, lambda: apply_stealth_mode(self)) 
+        
         text = self.ocr.process(img)
+        
+        # Editörün yazılabilir olduğundan emin oluyoruz
+        self.text_area.configure(state="normal")
         self.text_area.delete("0.0", "end")
         self.text_area.insert("0.0", text)
+        self.text_area.focus_set() # Otomatik odaklan
 
     def translate_text(self):
         content = self.text_area.get("0.0", "end").strip()
