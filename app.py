@@ -101,20 +101,26 @@ class CheaterApp(ctk.CTk):
         self.main_container = ctk.CTkFrame(self, fg_color="transparent")
         self.main_container.pack(fill="both", expand=True, padx=20, pady=10)
         
-        self.left_panel = ctk.CTkFrame(self.main_container, fg_color=self.dark_grey, border_color=self.silver, border_width=1)
-        self.left_panel.grid(row=0, column=0, sticky="nsew", padx=10)
+        # Sürükle-bırak (PanedWindow) bölücü eklendi
+        self.paned_window = tk.PanedWindow(self.main_container, orient="horizontal", bg="#000000", bd=0, sashwidth=10, sashcursor="sb_h_double_arrow")
+        self.paned_window.pack(fill="both", expand=True)
+
+        self.left_panel = ctk.CTkFrame(self.paned_window, fg_color=self.dark_grey, border_color=self.silver, border_width=1)
         self.source_label = ctk.CTkLabel(self.left_panel, text="", text_color=self.silver, font=("Bodoni Moda", 14, "bold"))
         self.source_label.pack(pady=10)
         self.text_area = ctk.CTkTextbox(self.left_panel, fg_color="#050505", text_color=self.silver, font=("Consolas", 16), border_color=self.purple, border_width=1)
         self.text_area.pack(fill="both", expand=True, padx=15, pady=15)
 
-        self.right_panel = ctk.CTkFrame(self.main_container, fg_color="#0A0A0A", border_color=self.purple, border_width=1)
-        self.right_panel.grid(row=0, column=1, sticky="nsew", padx=10)
+        self.right_panel = ctk.CTkFrame(self.paned_window, fg_color="#0A0A0A", border_color=self.purple, border_width=1)
         self.result_label = ctk.CTkLabel(self.right_panel, text="", text_color=self.purple, font=("Consolas", 14, "italic"))
         self.result_label.pack(pady=10)
         self.result_area = ctk.CTkTextbox(self.right_panel, fg_color="#000000", text_color="#D4D4D4", font=("Consolas", 16), border_color="#333333", border_width=0)
         self.result_area.pack(fill="both", expand=True, padx=20, pady=20)
         self.result_area._textbox.configure(insertbackground=self.purple, spacing2=8)
+
+        # Panelleri PanedWindow'a ekleyelim
+        self.paned_window.add(self.left_panel, minsize=300, stretch="always", padx=5)
+        self.paned_window.add(self.right_panel, minsize=300, stretch="always", padx=5)
 
         # Tags
         self.result_area._textbox.tag_config("h1", foreground=self.purple, font=("Consolas", 24, "bold"), spacing1=15, spacing3=10)
@@ -122,9 +128,6 @@ class CheaterApp(ctk.CTk):
         self.result_area._textbox.tag_config("bold", foreground="white", font=("Consolas", 16, "bold"))
         self.result_area._textbox.tag_config("list", foreground="#6A9955", lmargin1=25, lmargin2=40)
         self.result_area._textbox.tag_config("code", foreground="#CE9178", background="#1E1E1E")
-
-        self.main_container.grid_columnconfigure((0,1), weight=1)
-        self.main_container.grid_rowconfigure(0, weight=1)
 
         # Toolbar
         self.toolbar = ctk.CTkFrame(self, fg_color="transparent")
@@ -183,19 +186,95 @@ class CheaterApp(ctk.CTk):
         self.text_area.insert("0.0", text)
         self.text_area.focus_set() # Otomatik odaklan
 
+    def show_loading(self, message):
+        self.result_area.delete("0.0", "end")
+        if not hasattr(self, 'loading_frame'):
+            self.loading_frame = ctk.CTkFrame(self.right_panel, fg_color="transparent")
+            self.loading_bar = ctk.CTkProgressBar(self.loading_frame, mode="indeterminate", width=250, progress_color=self.purple)
+            self.loading_bar.pack(pady=(20, 15))
+            self.loading_label = ctk.CTkLabel(self.loading_frame, text="", text_color=self.silver, font=("Consolas", 16, "bold"))
+            self.loading_label.pack()
+
+        self.loading_frame.place(relx=0.5, rely=0.5, anchor="center")
+        self.loading_label.configure(text=message)
+        self.loading_bar.start()
+        self.set_buttons_state("disabled")
+
+    def hide_loading(self):
+        if hasattr(self, 'loading_frame'):
+            self.loading_bar.stop()
+            self.loading_frame.place_forget()
+        self.set_buttons_state("normal")
+
+    def set_buttons_state(self, state):
+        self.btn_scan.configure(state=state)
+        self.btn_trans.configure(state=state)
+        self.btn_ai.configure(state=state)
+        self.btn_speak.configure(state=state)
+
+    def finish_task(self, text):
+        self.hide_loading()
+        self.render_markdown(text)
+
+    def show_error_box(self, err_msg):
+        self.hide_loading()
+        err_window = ctk.CTkToplevel(self)
+        err_window.title("Sistem Hatası")
+        err_window.geometry("500x250")
+        err_window.attributes("-topmost", True)
+        err_window.resizable(False, False)
+        
+        # Modal mode
+        err_window.grab_set()
+
+        lbl_title = ctk.CTkLabel(err_window, text="⚠️ Bir Hata Meydana Geldi", text_color="#FF4C4C", font=("Consolas", 18, "bold"))
+        lbl_title.pack(pady=(20, 10))
+        
+        lbl_msg = ctk.CTkLabel(err_window, text=str(err_msg), text_color="#D4D4D4", font=("Consolas", 14), wraplength=450)
+        lbl_msg.pack(pady=10)
+
+        btn_frame = ctk.CTkFrame(err_window, fg_color="transparent")
+        btn_frame.pack(pady=(10, 20), side="bottom")
+
+        def restart_app():
+            err_window.destroy()
+            self.destroy()
+            os.execl(sys.executable, sys.executable, *sys.argv)
+
+        def close_box():
+            err_window.destroy()
+
+        btn_restart = ctk.CTkButton(btn_frame, text="Yeniden Başlat 🔄", command=restart_app, fg_color="#8A2BE2", hover_color="#5D1E99")
+        btn_restart.pack(side="left", padx=15)
+
+        btn_ok = ctk.CTkButton(btn_frame, text="Kapat ✕", command=close_box, fg_color="#333333", hover_color="#555555")
+        btn_ok.pack(side="right", padx=15)
+
     def translate_text(self):
         content = self.text_area.get("0.0", "end").strip()
         if content:
             target = "tr" if self.lang_option.get() == "Türkçe" else "en"
-            self.ai.translate(content, target, lambda res: self.after(0, lambda: self.render_markdown(f"# ÇEVİRİ SONUCU\n\n{res}")))
+            msg = "⏳ Çevriliyor..." if target == "tr" else "⏳ Translating..."
+            self.show_loading(msg)
+            self.ai.translate(
+                content, 
+                target, 
+                lambda res: self.after(0, self.finish_task, f"# ÇEVİRİ SONUCU\n\n{res}"),
+                lambda err: self.after(0, self.show_error_box, err)
+            )
 
     def ask_ai(self):
         content = self.text_area.get('0.0', 'end').strip()
         if content:
             lang = self.lang_option.get()
-            self.result_area.delete("0.0", "end")
-            self.result_area.insert("end", "⏳ Analiz Başlatıldı...\n", "bold")
-            self.ai.analyze(LOCALIZATION[lang]["ai_prompt"], content, lambda res: self.after(0, lambda: self.render_markdown(res)))
+            msg = "🧠 Yapay Zeka Analiz Ediyor..." if lang == "Türkçe" else "🧠 AI is Analyzing..."
+            self.show_loading(msg)
+            self.ai.analyze(
+                LOCALIZATION[lang]["ai_prompt"], 
+                content, 
+                lambda res: self.after(0, self.finish_task, res),
+                lambda err: self.after(0, self.show_error_box, err)
+            )
 
     def speak_text(self):
         content = self.result_area.get("0.0", "end").strip()

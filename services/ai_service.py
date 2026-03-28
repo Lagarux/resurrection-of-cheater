@@ -9,16 +9,24 @@ class AIManager:
         self.client = genai.Client(api_key=GEMINI_API_KEY)
         pygame.mixer.init()
 
-    def analyze(self, prompt, text, callback):
+    def analyze(self, prompt, text, callback, error_callback=None):
         def run():
-            res = self.client.models.generate_content(model="gemini-3-flash-preview", contents=prompt + text)
-            callback(res.text)
+            try:
+                res = self.client.models.generate_content(model="gemini-3-flash-preview", contents=prompt + text)
+                callback(res.text)
+            except Exception as e:
+                if error_callback:
+                    error_callback(str(e))
         threading.Thread(target=run, daemon=True).start()
 
-    def translate(self, text, target, callback):
+    def translate(self, text, target, callback, error_callback=None):
         def run():
-            translated = GoogleTranslator(source='auto', target=target).translate(text)
-            callback(translated)
+            try:
+                translated = GoogleTranslator(source='auto', target=target).translate(text)
+                callback(translated)
+            except Exception as e:
+                if error_callback:
+                    error_callback(str(e))
         threading.Thread(target=run, daemon=True).start()
 
     def speak(self, text, lang):
