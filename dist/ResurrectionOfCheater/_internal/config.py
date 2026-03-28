@@ -19,7 +19,6 @@ else:
     BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # --- API Anahtarı ---
-GEMINI_API_KEY = "AIzaSyCPyc8JoJ7D3t00CUKL3mdpNPKwfGz8QKA"
 
 # --- Tesseract Yolları ---
 TESSERACT_PATH = os.path.join(BASE_PATH, "Tesseract-OCR", "tesseract.exe")
